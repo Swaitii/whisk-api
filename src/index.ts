@@ -417,4 +417,6 @@ export default class Whisk {
       return { Err: new Error("Failed to parse response:" + resp.Ok) }
     }
   }
+
+  // TODO: Rename, delete, animate, regenerate
 }
