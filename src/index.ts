@@ -268,48 +268,6 @@ export default class Whisk {
 
 
   /**
-   * Fetches the base64 encoded image from its media key (name).
-   * Media key can be obtained by calling: `getImageHistory()[0...N].name`
-   * 
-   * @param mediaKey The media key of the image you want to fetch.
-   */
-  async getMedia(mediaKey: string): Promise<Result<FetchedImage>> {
-    this.#checkCredentials();
-
-    if (!mediaKey) {
-      return { Err: new Error("Media key is required to fetch the image.") };
-    }
-
-    const reqJson = { "json": { "mediaKey": mediaKey } };
-    const req: Request = {
-      method: "GET",
-      headers: new Headers({
-        "Content-Type": "application/json",
-        "Cookie": String(this.credentials.cookie),
-      }),
-      url: `https://labs.google/fx/api/trpc/media.fetchMedia?input=` + JSON.stringify(reqJson),
-    };
-
-    const resp = await request(req);
-    if (resp.Err || !resp.Ok) {
-      return { Err: resp.Err }
-    }
-
-    try {
-      const parsedResp = JSON.parse(resp.Ok);
-      const image = parsedResp?.result?.data?.json?.result;
-
-      if (!image) {
-        return { Err: new Error("Failed to get media: " + resp.Ok) };
-      }
-
-      return { Ok: image as FetchedImage };
-    } catch (err) {
-      return { Err: new Error("Failed to parse response: " + resp.Ok) };
-    }
-  }
-
-  /**
    * Fetches the content of a project by its ID.
    * 
    * @param projectId The ID of the project you want to fetch content from.
@@ -346,6 +304,48 @@ export default class Whisk {
       }
 
       return { Ok: mediaList as ImageMetadata[] };
+    } catch (err) {
+      return { Err: new Error("Failed to parse response: " + resp.Ok) };
+    }
+  }
+
+  /**
+   * Fetches the base64 encoded image from its media key (name).
+   * Media key can be obtained by calling: `getImageHistory()[0...N].name`
+   * 
+   * @param mediaKey The media key of the image you want to fetch.
+   */
+  async getMedia(mediaKey: string): Promise<Result<FetchedImage>> {
+    this.#checkCredentials();
+
+    if (!mediaKey) {
+      return { Err: new Error("Media key is required to fetch the image.") };
+    }
+
+    const reqJson = { "json": { "mediaKey": mediaKey } };
+    const req: Request = {
+      method: "GET",
+      headers: new Headers({
+        "Content-Type": "application/json",
+        "Cookie": String(this.credentials.cookie),
+      }),
+      url: `https://labs.google/fx/api/trpc/media.fetchMedia?input=` + JSON.stringify(reqJson),
+    };
+
+    const resp = await request(req);
+    if (resp.Err || !resp.Ok) {
+      return { Err: resp.Err }
+    }
+
+    try {
+      const parsedResp = JSON.parse(resp.Ok);
+      const image = parsedResp?.result?.data?.json?.result;
+
+      if (!image) {
+        return { Err: new Error("Failed to get media: " + resp.Ok) };
+      }
+
+      return { Ok: image as FetchedImage };
     } catch (err) {
       return { Err: new Error("Failed to parse response: " + resp.Ok) };
     }
