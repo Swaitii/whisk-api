@@ -266,7 +266,6 @@ export default class Whisk {
     }
   }
 
-
   /**
    * Fetches the content of a project by its ID.
    * 
