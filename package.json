@@ -1,0 +1,16 @@
+{
+  "name": "whisk-api",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "main": "src/index.ts"
+}
