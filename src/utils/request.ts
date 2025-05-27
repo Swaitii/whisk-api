@@ -6,9 +6,9 @@ const request = async function (req: Request): Promise<Result<string>> {
 
   // console.log(req.headers);
 
-  if (!req.headers.has("Authorization")) {
-    console.warn("Warning: Request is missing authorization headers: " + req.url)
-  }
+  // if (!req.headers.has("Authorization")) {
+  //   console.warn("Warning: Request is missing authorization headers: " + req.url)
+  // }
 
   try {
     const reqs = await fetch(req.url, {
