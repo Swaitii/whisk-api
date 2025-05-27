@@ -118,11 +118,12 @@ if (result.Err) {
 # Install dependencies
 bun install
 
+# Set up environment
+export COOKIE="your_cookie_here"
+
 # Run tests
 bun test
 
-# Set up environment
-export COOKIE="your_cookie_here"
 ```
 
 ## Testing
@@ -135,8 +136,7 @@ bun test
 
 ## Limitations
 
-- Requires valid Google Labs authentication
-- Rate limiting applies based on Google's policies
+- Requires valid Google's logged in cookies.
 - Regional availability may vary
 - Unofficial API subject to changes
 
