@@ -256,7 +256,7 @@ export default class Whisk {
       const mediaList = parsedResp?.result?.data?.json?.result?.userWorkflows;
 
       // More cases required here
-      if (mediaList || Array.isArray(mediaList)) {
+      if (mediaList && Array.isArray(mediaList)) {
         return { Ok: mediaList as Images[] }
       }
 
