@@ -1,0 +1,12 @@
+src/
+tests/
+examples/
+.env*
+*.log
+.cache
+.eslintcache
+tsconfig.json
+tsup.config.ts
+.github/
+.gitignore
+bun.lockb
