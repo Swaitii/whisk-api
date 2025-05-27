@@ -1,6 +1,7 @@
 import type { Credentials, FetchedImage, GenerationResult, ImageMetadata, Images, Projects, Prompt, RefinementRequest, Result } from "./global.types";
 import type { Request } from "./global.types";
 import { request } from "./utils/request";
+import { writeFileSync } from "fs";
 
 export default class Whisk {
   credentials: Credentials;
@@ -650,7 +651,7 @@ export default class Whisk {
     const req2: Request = {
       method: "POST",
       body: JSON.stringify(reqJson2),
-      url: "https://aisandbox-pa.googleapis.com/v1:generateImage",
+      url: "https://aisandbox-pa.googleapis.com/v1:runBackboneImageGeneration",
       headers: new Headers({
         "Content-Type": "text/plain;charset=UTF-8", // Yes
         "Authorization": `Bearer ${String(this.credentials.authorizationKey)}`, // Requires bearer
@@ -671,6 +672,44 @@ export default class Whisk {
       return { Ok: parsedResp2 as GenerationResult };
     } catch (err) {
       return { Err: new Error("Failed to parse response: " + resp2.Ok) };
+    }
+  }
+
+  /**
+   * Save image to a file with the given name.
+   * 
+   * @param image The base64 encoded image string.
+   * @param fileName The name of the file where the image will be saved.
+   */
+  saveImage(image: string, fileName: string): Error | null {
+    try {
+      writeFileSync(fileName, image, { encoding: 'base64' });
+      return null;
+    } catch (err) {
+      return new Error("Failed to save image: " + err);
+    }
+  }
+
+  /**
+   * Save image from its id directly
+   * 
+   * @param imageId The ID of the image you want to save.
+   * @param fileName The name of the file where the image will be saved.
+   */
+  async saveImageDirect(imageId: string, fileName: string): Promise<Result<boolean>> {
+    const image = await this.getMedia(imageId);
+
+    if (image.Err || !image.Ok) {
+      return { Err: image.Err };
+    }
+
+    try {
+      writeFileSync(fileName, image.Ok.image.encodedImage, { encoding: 'base64' });
+      return { Ok: true };
+    } catch (err) {
+      return {
+        Err: new Error("Failed to save image: " + err)
+      }
     }
   }
 }
