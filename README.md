@@ -20,15 +20,15 @@ An unofficial TypeScript/JavaScript API wrapper for Google Labs' Whisk image gen
 ## Installation
 
 ```bash
-bun i whisk-api
+bun i @rohitaryal/whisk-api
 # or
-npm i whisk-api
+npm i @rohitaryal/whisk-api
 ```
 
 ## Quick Start
 
 ```typescript
-import Whisk from 'whisk-api';
+import Whisk from '@rohitaryal/whisk-api';
 
 const whisk = new Whisk({
   cookie: "your_google_labs_cookie_here"
