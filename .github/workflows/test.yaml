@@ -18,12 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Debug environment
-        run: |
-          echo "COOKIE is set: $([[ -n "$COOKIE" ]] && echo "YES" || echo "NO")"
-          echo "COOKIE length: ${#COOKIE}"
-        env:
-          COOKIE: ${{ secrets.COOKIE }}
-
       - name: Install bun
         uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run tests
+        run: bun test
