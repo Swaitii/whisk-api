@@ -29,7 +29,7 @@
     "url": "git+https://github.com/rohitaryal/whisk-api.git"
   },
   "keywords": [
-    "whisk"
+    "whisk", "whisk-api", "ai-image-generator", "labs-google"
   ],
   "author": "rohitaryal",
   "license": "MIT",
