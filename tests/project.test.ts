@@ -39,6 +39,32 @@ test.if((projects.Ok?.length || 0) > 0)("Get project contents", async () => {
   expect(projectContent.Err).toBeUndefined();
   expect(projectContent.Ok).toBeDefined();
 
-  expect(projectContent.Ok!.length > 0).toBe(true);
+  expect(projectContent.Ok!.length).toBeGreaterThan(0);
   expect(projectContent.Ok![0]?.name).toBeDefined()
 })
+
+test.if((projects.Ok?.length || 0) > 0)("Delete project", async () => {
+  const projectId = projects.Ok![0]!.name;
+
+  const deleteProject = await whisk.deleteProjects([projectId]);
+  expect(deleteProject.Err).toBeUndefined();
+  expect(deleteProject.Ok).toBeDefined();
+
+  projects.Ok = projects.Ok!.slice(1) // Remove the deleted project from the list for further tests
+})
+
+test.if((projects.Ok?.length || 0) > 0)("Rename project", async () => {
+  const projectId = projects.Ok![0]!.name;
+  const newName = "Renamed project";
+
+  const renameProject = await whisk.renameProject(newName, projectId);
+  expect(renameProject.Err).toBeUndefined();
+  expect(renameProject.Ok).toBeDefined();
+
+  // Check if the project was renamed
+  const projectContent = await whisk.getProjectHistory(12);
+  expect(projectContent.Err).toBeUndefined();
+  expect(projectContent.Ok).toBeDefined();
+
+  expect(projectContent.Ok![0]?.displayName).toBe(newName);
+});
