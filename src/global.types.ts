@@ -1,3 +1,20 @@
+export type ImageModel =
+  | "IMAGEN_2"
+  | "IMAGEN_3"
+  | "IMAGEN_3_1"
+  | "IMAGEN_3_5"
+  | "IMAGEN_3_PORTRAIT"
+  | "IMAGEN_3_LANDSCAPE"
+  | "IMAGEN_3_PORTRAIT_THREE_FOUR"
+  | "IMAGEN_3_LANDSCAPE_FOUR_THREE";
+export type AspectRatio =
+  | "IMAGE_ASPECT_RATIO_SQUARE"
+  | "IMAGE_ASPECT_RATIO_PORTRAIT"
+  | "IMAGE_ASPECT_RATIO_LANDSCAPE"
+  | "IMAGE_ASPECT_RATIO_UNSPECIFIED"
+  | "IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE"
+  | "IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR";
+
 export interface Credentials {
   cookie: string;
   authorizationKey?: string;
@@ -23,25 +40,11 @@ export interface Request {
 }
 
 export interface Prompt {
-  seed: number;
+  seed?: number;
   prompt: string;
-  projectId: string;
-  imageModel:
-  | "IMAGEN_2"
-  | "IMAGEN_3"
-  | "IMAGEN_3_1"
-  | "IMAGEN_3_5"
-  | "IMAGEN_3_PORTRAIT"
-  | "IMAGEN_3_LANDSCAPE"
-  | "IMAGEN_3_PORTRAIT_THREE_FOUR"
-  | "IMAGEN_3_LANDSCAPE_FOUR_THREE";
-  aspectRatio:
-  "IMAGE_ASPECT_RATIO_SQUARE"
-  | "IMAGE_ASPECT_RATIO_PORTRAIT"
-  | "IMAGE_ASPECT_RATIO_LANDSCAPE"
-  | "IMAGE_ASPECT_RATIO_UNSPECIFIED"
-  | "IMAGE_ASPECT_RATIO_LANDSCAPE_FOUR_THREE"
-  | "IMAGE_ASPECT_RATIO_PORTRAIT_THREE_FOUR";
+  projectId?: string;
+  imageModel?: ImageModel;
+  aspectRatio?: AspectRatio;
 }
 
 export interface Projects {
@@ -145,13 +148,25 @@ export interface GeneratedImage {
   seed: number;
   mediaGenerationId: string;
   prompt: string;
-  imageModel:
-  | "IMAGEN_2"
-  | "IMAGEN_3"
-  | "IMAGEN_3_1"
-  | "IMAGEN_3_5"
-  | "IMAGEN_3_PORTRAIT"
-  | "IMAGEN_3_LANDSCAPE"
-  | "IMAGEN_3_PORTRAIT_THREE_FOUR"
-  | "IMAGEN_3_LANDSCAPE_FOUR_THREE";
+  isMaskEditedImage?: boolean
+  modelNameType?: string;
+  workflowId?: string;
+  fingerprintLogRecordId?: string;
+  imageModel?: ImageModel;
+}
+
+export interface RefinementRequest {
+  existingPrompt: string;
+  newRefinement: string;
+  base64image: string;
+  /**
+   * The media key of the image you want to refine.
+   * You can get this by calling `getImageHistory()[0...N].name`
+   */
+  imageId: string;
+  seed?: number;
+  count?: number,
+  imageModel?: ImageModel;
+  aspectRatio?: AspectRatio;
+  projectId?: string;
 }
