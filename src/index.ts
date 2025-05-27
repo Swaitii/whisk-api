@@ -1,4 +1,4 @@
-import type { Credentials, FetchedImage, GenerationResult, ImageMetadata, Images, Projects, Prompt, Result } from "./global.types";
+import type { Credentials, FetchedImage, GenerationResult, ImageMetadata, Images, Projects, Prompt, RefinementRequest, Result } from "./global.types";
 import type { Request } from "./global.types";
 import { request } from "./utils/request";
 
@@ -66,7 +66,7 @@ export default class Whisk {
    */
   async getAuthorizationToken(): Promise<Result<string>> {
     // Not on this one
-    // this.#checkCredentials();
+    // await this.#checkCredentials();
     if (!this.credentials.cookie) {
       return { Err: new Error("Empty or invalid cookies.") }
     }
@@ -102,7 +102,7 @@ export default class Whisk {
    * Get the current credit status of the user. This is for `veo` only and not `whisk`.
    */
   async getCreditStatus(): Promise<Result<number>> {
-    this.#checkCredentials();
+    await this.#checkCredentials();
 
     const req: Request = {
       method: "POST",
@@ -133,7 +133,7 @@ export default class Whisk {
    * @param projectTitle The name you want to give to the project.
    */
   async getNewProjectId(projectTitle: string): Promise<Result<string>> {
-    this.#checkCredentials();
+    await this.#checkCredentials();
 
     const req: Request = {
       method: "POST",
@@ -173,7 +173,7 @@ export default class Whisk {
    * @param limitCount The number of projects you want to fetch.
    */
   async getProjectHistory(limitCount: number): Promise<Result<Projects[]>> {
-    this.#checkCredentials();
+    await this.#checkCredentials();
 
     const reqJson = {
       "json": {
@@ -221,7 +221,7 @@ export default class Whisk {
    * @param limitCount The number of images you want to fetch.
    */
   async getImageHistory(limitCount: number): Promise<Result<Images[]>> {
-    this.#checkCredentials();
+    await this.#checkCredentials();
 
     // No upper known limit
     if (limitCount <= 0) {
@@ -272,7 +272,7 @@ export default class Whisk {
    * @param projectId The ID of the project you want to fetch content from.
    */
   async getProjectContent(projectId: string): Promise<Result<ImageMetadata[]>> {
-    this.#checkCredentials();
+    await this.#checkCredentials();
 
     if (!projectId) {
       return { Err: new Error("Project ID is required to fetch project content.") };
@@ -308,6 +308,106 @@ export default class Whisk {
     }
   }
 
+
+  /**
+   * Rename a project title.
+   * 
+   * @param newName New name for your project
+   * @param projectId Identifier for project that you need to rename
+   */
+  async renameProject(newName: string, projectId: string): Promise<Result<string>> {
+    if (!this.credentials.cookie) {
+      return { Err: new Error("Cookie field is empty") };
+    }
+
+    const reqJson = {
+      "json": {
+        "workflowId": projectId,
+        "clientContext": {
+          "sessionId": ";1748333296243",
+          "tool": "BACKBONE",
+          "workflowId": projectId
+        },
+        "workflowMetadata": { "workflowName": newName }
+      }
+    };
+
+    const req: Request = {
+      method: "POST",
+      body: JSON.stringify(reqJson),
+      headers: new Headers({
+        "Content-Type": "application/json",
+        "Cookie": String(this.credentials.cookie),
+      }),
+      url: "https://labs.google/fx/api/trpc/media.createOrUpdateWorkflow",
+    };
+
+    const resp = await request(req);
+    if (resp.Err || !resp.Ok) {
+      return { Err: resp.Err };
+    }
+
+    try {
+      const parsedBody = JSON.parse(resp.Ok);
+      const workflowId = parsedBody?.result?.data?.json?.result?.workflowId;
+
+      if (parsedBody.error || !workflowId) {
+        return { Err: new Error("Failed to rename project: " + resp.Ok) }
+      }
+
+      return { Ok: String(workflowId) }
+    } catch (err) {
+      return { Err: new Error("Failed to parse JSON: " + resp.Ok) }
+    }
+  }
+
+  /**
+   * Delete project(s) from libary
+   * 
+   * @param projectIds Array of project id that you need to delete.
+  */
+  async deleteProjects(projectIds: string[]): Promise<Result<boolean>> {
+    if (!this.credentials.cookie) {
+      return { Err: new Error("Cookie field is empty") };
+    }
+
+    const reqJson = {
+      "json":
+      {
+        "parent": "userProject/",
+        "names": projectIds,
+      }
+    };
+
+    const req: Request = {
+      method: "POST",
+      body: JSON.stringify(reqJson),
+      url: "https://labs.google/fx/api/trpc/media.deleteMedia",
+      headers: new Headers({
+        "Content-Type": "application/json",
+        "Cookie": String(this.credentials.cookie),
+      }
+      )
+    };
+
+    const resp = await request(req);
+    if (resp.Err || !resp.Ok) {
+      return { Err: resp.Err }
+    }
+
+    try {
+      const parsedResp = JSON.parse(resp.Ok);
+
+      if (parsedResp.error) {
+        return { Err: new Error("Failed to delete media: " + resp.Ok) }
+      }
+
+      return { Ok: true };
+    } catch (err) {
+      return { Err: new Error("Failed to parse JSON: " + resp.Ok) }
+    }
+  }
+
   /**
    * Fetches the base64 encoded image from its media key (name).
    * Media key can be obtained by calling: `getImageHistory()[0...N].name`
@@ -315,7 +415,7 @@ export default class Whisk {
    * @param mediaKey The media key of the image you want to fetch.
    */
   async getMedia(mediaKey: string): Promise<Result<FetchedImage>> {
-    this.#checkCredentials();
+    await this.#checkCredentials();
 
     if (!mediaKey) {
       return { Err: new Error("Media key is required to fetch the image.") };
@@ -356,7 +456,7 @@ export default class Whisk {
    * @param prompt The prompt containing the details for image generation.
    */
   async generateImage(prompt: Prompt): Promise<Result<GenerationResult>> {
-    this.#checkCredentials();
+    await this.#checkCredentials();
 
     if (!prompt || !prompt.prompt) {
       return { Err: new Error("Invalid prompt. Please provide a valid prompt and projectId") };
@@ -369,6 +469,11 @@ export default class Whisk {
         return { Err: id.Err }
 
       prompt.projectId = id.Ok;
+    }
+
+    // Because seed can be zero
+    if (prompt.seed == undefined) {
+      prompt.seed = 0;
     }
 
     if (!prompt.imageModel) {
@@ -400,7 +505,7 @@ export default class Whisk {
       url: "https://aisandbox-pa.googleapis.com/v1/whisk:generateImage",
       headers: new Headers({
         "Content-Type": "application/json",
-        "Authorization": String(this.credentials.authorizationKey),
+        "Authorization": `Bearer ${String(this.credentials.authorizationKey)}`, // Requires bearer
       }),
     };
 
@@ -411,6 +516,9 @@ export default class Whisk {
 
     try {
       const parsedResp = JSON.parse(resp.Ok);
+      if (parsedResp.error) {
+        return { Err: new Error("Failed to generate image: " + resp.Ok) }
+      }
 
       return { Ok: parsedResp as GenerationResult }
     } catch (err) {
@@ -418,5 +526,151 @@ export default class Whisk {
     }
   }
 
-  // TODO: Rename, delete, animate, regenerate
+  /**
+   * Refine a generated image.
+   * 
+   * Refination actually happens in the followin way:
+   * 1. Client provides an image (base64 encoded) to refine with new prompt eg: "xyz".
+   * 2. Server responds with *a new prompt describing your image* eg: AI-Mix("pqr", "xyz") 
+   *    Where `pqr` - Description of original image
+   * 3. Client requests image re-generation as: AI-Mix("pqr", "xyz")
+   * 4. Server responds with new base64 encoded image
+   */
+  async refineImage(ref: RefinementRequest): Promise<Result<GenerationResult>> {
+    await this.#checkCredentials();
+
+    if (ref.seed == undefined) {
+      ref.seed = 0;
+    }
+
+    if (!ref.aspectRatio) {
+      ref.aspectRatio = "IMAGE_ASPECT_RATIO_LANDSCAPE"; // Default in frontend
+    }
+
+    if (!ref.imageModel) {
+      ref.imageModel = "IMAGEN_3_5"; // Default in frontend (This is actually Imagen 4)
+    }
+
+    if (!ref.count) {
+      ref.count = 1; // Default in frontend
+    }
+
+    const reqJson = {
+      "json": {
+        "existingPrompt": ref.existingPrompt,
+        "textInput": ref.newRefinement,
+        "editingImage": {
+          "imageId": ref.imageId,
+          "base64Image": ref.base64image,
+          "category": "STORYBOARD",
+          "prompt": ref.existingPrompt,
+          "mediaKey": ref.imageId,
+          "isLoading": false,
+          "isFavorite": null,
+          "isActive": true,
+          "isPreset": false,
+          "isSelected": false,
+          "index": 0,
+          "imageObjectUrl": "blob:https://labs.google/1c612ac4-ecdf-4f77-9898-82ac488ad77f",
+          "recipeInput": {
+            "mediaInputs": [],
+            "userInput": {
+              "userInstructions": ref.existingPrompt
+            }
+          },
+          "currentImageAction": "REFINING",
+          "seed": ref.seed
+        },
+        "sessionId": ";1748338835952" // doesn't matter
+      },
+      "meta": {
+        "values": {
+          "editingImage.isFavorite": [
+            "undefined"
+          ]
+        }
+      }
+    };
+
+    const req: Request = {
+      method: "POST",
+      body: JSON.stringify(reqJson),
+      url: "https://labs.google/fx/api/trpc/backbone.generateRewrittenPrompt",
+      headers: new Headers({
+        "Content-Type": "application/json",
+        "Cookie": String(this.credentials.cookie),
+      }),
+    };
+
+    const resp = await request(req);
+    if (resp.Err || !resp.Ok) {
+      return { Err: resp.Err }
+    }
+
+    let parsedResp;
+    try {
+      parsedResp = JSON.parse(resp.Ok);
+      if (parsedResp.error) {
+        return { Err: new Error("Failed to refine image: " + resp.Ok) };
+      }
+    }
+    catch (err) {
+      return { Err: new Error("Failed to parse response: " + resp.Ok) };
+    }
+
+    const newPrompt = parsedResp?.result?.data?.json;
+    if (!newPrompt) {
+      return { Err: new Error("Failed to get new prompt from response: " + resp.Ok) };
+    }
+
+    const reqJson2 = {
+      "userInput": {
+        "candidatesCount": ref.count,
+        "seed": ref.seed,
+        "prompts": [newPrompt],
+        "mediaCategory": "MEDIA_CATEGORY_BOARD",
+        "recipeInput": {
+          "userInput": {
+            "userInstructions": newPrompt,
+          },
+          "mediaInputs": []
+        }
+      },
+      "clientContext": {
+        "sessionId": ";1748338835952", // can be anything
+        "tool": "BACKBONE",
+        "workflowId": ref.projectId,
+      },
+      "modelInput": {
+        "modelNameType": ref.imageModel
+      },
+      "aspectRatio": ref.aspectRatio
+    }
+
+    const req2: Request = {
+      method: "POST",
+      body: JSON.stringify(reqJson2),
+      url: "https://aisandbox-pa.googleapis.com/v1:generateImage",
+      headers: new Headers({
+        "Content-Type": "text/plain;charset=UTF-8", // Yes
+        "Authorization": `Bearer ${String(this.credentials.authorizationKey)}`, // Requires bearer
+      }),
+    };
+
+    const resp2 = await request(req2);
+    if (resp2.Err || !resp2.Ok) {
+      return { Err: resp2.Err }
+    }
+
+    try {
+      const parsedResp2 = JSON.parse(resp2.Ok);
+      if (parsedResp2.error) {
+        return { Err: new Error("Failed to refine image: " + resp2.Ok) };
+      }
+
+      return { Ok: parsedResp2 as GenerationResult };
+    } catch (err) {
+      return { Err: new Error("Failed to parse response: " + resp2.Ok) };
+    }
+  }
 }
