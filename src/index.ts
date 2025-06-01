@@ -1,6 +1,6 @@
 import type { Credentials, FetchedImage, GenerationResult, ImageMetadata, Images, Projects, Prompt, RefinementRequest, Result } from "./global.types";
 import type { Request } from "./global.types";
-import { request } from "./utils/request";
+import { request } from "./utils/request.js";
 import { writeFileSync } from "fs";
 
 export default class Whisk {
